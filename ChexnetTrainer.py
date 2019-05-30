@@ -2,6 +2,7 @@ import os
 import numpy as np
 import time
 import sys
+import subprocess
 
 import torch
 import torch.nn as nn
@@ -42,6 +43,7 @@ class ChexnetTrainer ():
     
     def train (pathDirData, pathFileTrain, pathFileVal, nnArchitecture, nnIsTrained, nnClassCount, trBatchSize, trMaxEpoch, transResize, transCrop, launchTimestamp, checkpoint):
 
+#        print(get_gpu_memory_map())
         
         #-------------------- SETTINGS: NETWORK ARCHITECTURE
         if nnArchitecture == 'DENSE-NET-121': model = DenseNet121(nnClassCount, nnIsTrained).cuda()
@@ -72,7 +74,7 @@ class ChexnetTrainer ():
         scheduler = ReduceLROnPlateau(optimizer, factor = 0.1, patience = 5, mode = 'min')
                 
         #-------------------- SETTINGS: LOSS
-        loss = torch.nn.BCELoss(size_average = True)
+        loss = torch.nn.CrossEntropyLoss(size_average = True)
         
         #---- Load checkpoint 
         if checkpoint != None:
@@ -82,26 +84,41 @@ class ChexnetTrainer ():
 
         
         #---- TRAIN THE NETWORK
+
+#        print(get_gpu_memory_map())
         
         lossMIN = 100000
         
         for epochID in range (0, trMaxEpoch):
+            print("Training epoch " +str(epochID+ 1) + " of " + str(trMaxEpoch))
+            
+            torch.cuda.empty_cache()
             
             timestampTime = time.strftime("%H%M%S")
             timestampDate = time.strftime("%d%m%Y")
             timestampSTART = timestampDate + '-' + timestampTime
-                         
-            ChexnetTrainer.epochTrain (model, dataLoaderTrain, optimizer, scheduler, trMaxEpoch, nnClassCount, loss)
+            torch.cuda.empty_cache()
+            
+            #ChexnetTrainer.epochTrain (model, dataLoaderTrain, optimizer, scheduler, trMaxEpoch, nnClassCount, loss)
+            print("Epoch training complete, starting epoch validation... ")
+            
+            torch.cuda.empty_cache()
+            
             lossVal, losstensor = ChexnetTrainer.epochVal (model, dataLoaderVal, optimizer, scheduler, trMaxEpoch, nnClassCount, loss)
+            print("Epoch validation complete, recording results.")
+
             
             timestampTime = time.strftime("%H%M%S")
             timestampDate = time.strftime("%d%m%Y")
             timestampEND = timestampDate + '-' + timestampTime
-            
-            scheduler.step(losstensor.data[0])
-            
+
+            torch.cuda.empty_cache()
+            scheduler.step(losstensor.item())
+
+            torch.cuda.empty_cache()
             if lossVal < lossMIN:
-                lossMIN = lossVal    
+                lossMIN = lossVal
+                torch.cuda.empty_cache()
                 torch.save({'epoch': epochID + 1, 'state_dict': model.state_dict(), 'best_loss': lossMIN, 'optimizer' : optimizer.state_dict()}, 'm-' + launchTimestamp + '.pth.tar')
                 print ('Epoch [' + str(epochID + 1) + '] [save] [' + timestampEND + '] loss= ' + str(lossVal))
             else:
@@ -114,46 +131,65 @@ class ChexnetTrainer ():
         model.train()
         
         for batchID, (input, target) in enumerate (dataLoader):
-                        
+            torch.cuda.empty_cache()            
             target = target.cuda(async = True)
                  
             varInput = torch.autograd.Variable(input)
             varTarget = torch.autograd.Variable(target)         
             varOutput = model(varInput)
+
+
+            #torch.reshape(varOutput, (2 * classCount, 3)) #check syntax
+            #torch.reshape(varTarget, (2 * classCount,)) #check 
+
+            varOutput = varOutput.view(4*classCount, 3)
+            varTarget = varTarget.view(4* classCount,) 
+            torch.cuda.empty_cache()
+            lossvalue = loss(varOutput, varTarget.long())
+            torch.cuda.empty_cache()
             
-            lossvalue = loss(varOutput, varTarget)
-                       
             optimizer.zero_grad()
             lossvalue.backward()
             optimizer.step()
-            
+            torch.cuda.empty_cache()
     #-------------------------------------------------------------------------------- 
         
     def epochVal (model, dataLoader, optimizer, scheduler, epochMax, classCount, loss):
-        
-        model.eval ()
-        
+
+        model.eval()
         lossVal = 0
         lossValNorm = 0
         
         losstensorMean = 0
         
-        for i, (input, target) in enumerate (dataLoader):
-            
+        for batchID, (input, target) in enumerate (dataLoader):
+            torch.cuda.empty_cache()
+            print("Loading data to start validation.")
             target = target.cuda(async=True)
-                 
-            varInput = torch.autograd.Variable(input, volatile=True)
-            varTarget = torch.autograd.Variable(target, volatile=True)    
+
+            with torch.no_grad():
+                varInput = torch.autograd.Variable(input)
+                varTarget = torch.autograd.Variable(target)
+                torch.cuda.empty_cache()
+            print("Feeding data into Densenet model.")
             varOutput = model(varInput)
+            print("Data passed through model successfully.")
+            torch.cuda.empty_cache()
             
-            losstensor = loss(varOutput, varTarget)
+            varTarget = varTarget.view(4*classCount,)
+            varOutput = varOutput.view(4* classCount, 3)
+            torch.cuda.empty_cache()
+            losstensor = loss(varOutput, varTarget.long())
             losstensorMean += losstensor
-            
-            lossVal += losstensor.data[0]
+            torch.cuda.empty_cache()
+            lossVal += losstensor.item()
             lossValNorm += 1
+
+            torch.cuda.empty_cache()
             
         outLoss = lossVal / lossValNorm
         losstensorMean = losstensorMean / lossValNorm
+        torch.cuda.empty_cache()
         
         return outLoss, losstensorMean
                
@@ -170,9 +206,14 @@ class ChexnetTrainer ():
         
         datanpGT = dataGT.cpu().numpy()
         datanpPRED = dataPRED.cpu().numpy()
+        torch.cuda.empty_cache()
         
         for i in range(classCount):
-            outAUROC.append(roc_auc_score(datanpGT[:, i], datanpPRED[:, i]))
+
+            try:
+                    outAUROC.append(roc_auc_score(datanpGT[:, i], datanpPRED[:, i]))
+            except ValueError:
+                    pass
             
         return outAUROC
         
@@ -196,8 +237,7 @@ class ChexnetTrainer ():
     def test (pathDirData, pathFileTest, pathModel, nnArchitecture, nnClassCount, nnIsTrained, trBatchSize, transResize, transCrop, launchTimeStamp):   
         
         
-        CLASS_NAMES = [ 'Atelectasis', 'Cardiomegaly', 'Effusion', 'Infiltration', 'Mass', 'Nodule', 'Pneumonia',
-                'Pneumothorax', 'Consolidation', 'Edema', 'Emphysema', 'Fibrosis', 'Pleural_Thickening', 'Hernia']
+        CLASS_NAMES = ['No Finding', 'Enlarged Cardiomediastinum', 'Cardiomegaly', 'Lung Opacity', 'Lung Lesion', 'Edema', 'Consolidation', 'Pneumonia', 'Atelectasis', 'Pneumothorax', 'Pleural Effusion', 'Pleural Other', 'Fracture', 'Support Devices']
         
         cudnn.benchmark = True
         
@@ -231,7 +271,7 @@ class ChexnetTrainer ():
         model.eval()
         
         for i, (input, target) in enumerate(dataLoaderTest):
-            
+            torch.cuda.empty_cache()
             target = target.cuda()
             outGT = torch.cat((outGT, target), 0)
             
@@ -256,7 +296,19 @@ class ChexnetTrainer ():
         return
 #-------------------------------------------------------------------------------- 
 
+def get_gpu_memory_map():
 
+
+    result = subprocess.check_output(
+        ['nvidia-smi', '--query-gpu=memory.used',
+         '--format—csv,nounits,noheader'], encoding='utf-8')
+    
+    # Convert lines into a dictionary
+    
+    gpu_memory = [int(x) for x in result.strip().split('\n')]
+    gpu_memory = dict(zip(range(len(gpu_memory)), gpu_memory))
+    print(str(gpu_memory_map))
+    return gpu_memory_map
 
 
 

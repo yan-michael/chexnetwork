@@ -2,6 +2,8 @@ import os
 import numpy as np
 import time
 import sys
+import subprocess
+
 
 from ChexnetTrainer import ChexnetTrainer
 
@@ -9,8 +11,8 @@ from ChexnetTrainer import ChexnetTrainer
 
 def main ():
     
-    runTest()
-    #runTrain()
+    #runTest()
+    runTrain()
   
 #--------------------------------------------------------------------------------   
 
@@ -30,9 +32,9 @@ def runTrain():
     #---- Paths to the files with training, validation and testing sets.
     #---- Each file should contains pairs [path to image, output vector]
     #---- Example: images_011/00027736_001.png 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-    pathFileTrain = './dataset/train_1.txt'
-    pathFileVal = './dataset/val_1.txt'
-    pathFileTest = './dataset/test_1.txt'
+    pathFileTrain = './dataset/train_lateral.csv'
+    pathFileVal = './dataset/dev_lateral.csv'
+    pathFileTest = './dataset/test_lateral.csv'
     
     #---- Neural network parameters: type of the network, is it pre-trained 
     #---- on imagenet, number of classes
@@ -41,15 +43,18 @@ def runTrain():
     nnClassCount = 14
     
     #---- Training settings: batch size, maximum number of epochs
-    trBatchSize = 16
-    trMaxEpoch = 100
+    trBatchSize = 4
+    trMaxEpoch = 10
     
     #---- Parameters related to image transforms: size of the down-scaled image, cropped image
     imgtransResize = 256
     imgtransCrop = 224
-        
-    pathModel = 'm-' + timestampLaunch + '.pth.tar'
+
+    type_of_img = 'lateral'
     
+    pathModel = 'm-' + timestampLaunch + type_of_img + '.pth.tar'
+
+      
     print ('Training NN architecture = ', nnArchitecture)
     ChexnetTrainer.train(pathDirData, pathFileTrain, pathFileVal, nnArchitecture, nnIsTrained, nnClassCount, trBatchSize, trMaxEpoch, imgtransResize, imgtransCrop, timestampLaunch, None)
     
@@ -61,15 +66,15 @@ def runTrain():
 def runTest():
     
     pathDirData = './database'
-    pathFileTest = './dataset/test_1.txt'
+    pathFileTest = './dataset/test_lateral.csv'
     nnArchitecture = 'DENSE-NET-121'
     nnIsTrained = True
     nnClassCount = 14
-    trBatchSize = 16
+    trBatchSize = 4
     imgtransResize = 256
     imgtransCrop = 224
     
-    pathModel = './models/m-25012018-123527.pth.tar'
+    pathModel = './model/m-attempt1lateral.pth.tar'
     
     timestampLaunch = ''
     

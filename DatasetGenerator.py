@@ -19,7 +19,7 @@ class DatasetGenerator (Dataset):
     
         #---- Open file, get image paths and labels
     
-        fileDescriptor = open(pathDatasetFile, "r")
+        fileDescriptor = open(pathDatasetFile, "r", encoding='utf-8-sig')
         
         #---- get into the loop
         line = True
@@ -31,7 +31,7 @@ class DatasetGenerator (Dataset):
             #--- if not empty
             if line:
           
-                lineItems = line.split()
+                lineItems = line.split(',')
                 
                 imagePath = os.path.join(pathImageDirectory, lineItems[0])
                 imageLabel = lineItems[1:]

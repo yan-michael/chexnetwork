@@ -14,17 +14,23 @@ import torchvision
 class DenseNet121(nn.Module):
 
     def __init__(self, classCount, isTrained):
-	
+
+        print("Module initiated")
         super(DenseNet121, self).__init__()
-		
+
+        
         self.densenet121 = torchvision.models.densenet121(pretrained=isTrained)
 
         kernelCount = self.densenet121.classifier.in_features
 		
-        self.densenet121.classifier = nn.Sequential(nn.Linear(kernelCount, classCount), nn.Sigmoid())
-
+        self.densenet121.classifier = nn.Sequential(nn.Linear(kernelCount, classCount * 3))
+        torch.cuda.empty_cache()
+        
     def forward(self, x):
+#        print("Forward() has been called")
+        torch.cuda.empty_cache()
         x = self.densenet121(x)
+        torch.cuda.empty_cache()
         return x
 
 class DenseNet169(nn.Module):

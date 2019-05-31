@@ -99,7 +99,7 @@ class ChexnetTrainer ():
             timestampSTART = timestampDate + '-' + timestampTime
             torch.cuda.empty_cache()
             
-            #ChexnetTrainer.epochTrain (model, dataLoaderTrain, optimizer, scheduler, trMaxEpoch, nnClassCount, loss)
+            ChexnetTrainer.epochTrain (model, dataLoaderTrain, optimizer, scheduler, trMaxEpoch, nnClassCount, loss)
             print("Epoch training complete, starting epoch validation... ")
             
             torch.cuda.empty_cache()
@@ -142,8 +142,8 @@ class ChexnetTrainer ():
             #torch.reshape(varOutput, (2 * classCount, 3)) #check syntax
             #torch.reshape(varTarget, (2 * classCount,)) #check 
 
-            varOutput = varOutput.view(4*classCount, 3)
-            varTarget = varTarget.view(4* classCount,) 
+            varOutput = varOutput.view(2*classCount, 3)
+            varTarget = varTarget.view(2* classCount,) 
             torch.cuda.empty_cache()
             lossvalue = loss(varOutput, varTarget.long())
             torch.cuda.empty_cache()
@@ -155,43 +155,40 @@ class ChexnetTrainer ():
     #-------------------------------------------------------------------------------- 
         
     def epochVal (model, dataLoader, optimizer, scheduler, epochMax, classCount, loss):
-
-        model.eval()
-        lossVal = 0
-        lossValNorm = 0
-        
-        losstensorMean = 0
-        
-        for batchID, (input, target) in enumerate (dataLoader):
-            torch.cuda.empty_cache()
-            print("Loading data to start validation.")
-            target = target.cuda(async=True)
-
-            with torch.no_grad():
-                varInput = torch.autograd.Variable(input)
-                varTarget = torch.autograd.Variable(target)
+        with torch.no_grad():
+            model.eval()
+            lossVal = 0
+            lossValNorm = 0
+            
+            losstensorMean = 0
+            
+            for i, (input, target) in enumerate (dataLoader):
                 torch.cuda.empty_cache()
-            print("Feeding data into Densenet model.")
-            varOutput = model(varInput)
-            print("Data passed through model successfully.")
-            torch.cuda.empty_cache()
-            
-            varTarget = varTarget.view(4*classCount,)
-            varOutput = varOutput.view(4* classCount, 3)
-            torch.cuda.empty_cache()
-            losstensor = loss(varOutput, varTarget.long())
-            losstensorMean += losstensor
-            torch.cuda.empty_cache()
-            lossVal += losstensor.item()
-            lossValNorm += 1
-
-            torch.cuda.empty_cache()
-            
-        outLoss = lossVal / lossValNorm
-        losstensorMean = losstensorMean / lossValNorm
-        torch.cuda.empty_cache()
-        
-        return outLoss, losstensorMean
+#                print("Loading data to start validation.")
+                target = target.cuda(async=True)
+                
+                with torch.no_grad():
+                    varInput = torch.autograd.Variable(input)
+                    varTarget = torch.autograd.Variable(target)
+ #                   print("Feeding data into Densenet model.")
+                    varOutput = model(varInput)
+  #                  print("Data passed through model successfully.")
+                    varTarget = varTarget.view(2*classCount,)
+                    varOutput = varOutput.view(2* classCount, 3)
+                    torch.cuda.empty_cache()
+                    losstensor = loss(varOutput, varTarget.long())
+                    losstensorMean += losstensor
+                    torch.cuda.empty_cache()
+                    lossVal += losstensor.item()
+                    lossValNorm += 1
+                    
+                    torch.cuda.empty_cache()
+                    
+                    outLoss = lossVal / lossValNorm
+                    losstensorMean = losstensorMean / lossValNorm
+                    torch.cuda.empty_cache()
+                    
+            return outLoss, losstensorMean
                
     #--------------------------------------------------------------------------------     
      
@@ -267,30 +264,29 @@ class ChexnetTrainer ():
         
         outGT = torch.FloatTensor().cuda()
         outPRED = torch.FloatTensor().cuda()
-       
-        model.eval()
-        
-        for i, (input, target) in enumerate(dataLoaderTest):
-            torch.cuda.empty_cache()
-            target = target.cuda()
-            outGT = torch.cat((outGT, target), 0)
-            
-            bs, n_crops, c, h, w = input.size()
-            
-            varInput = torch.autograd.Variable(input.view(-1, c, h, w).cuda(), volatile=True)
-            
-            out = model(varInput)
-            outMean = out.view(bs, n_crops, -1).mean(1)
-            
-            outPRED = torch.cat((outPRED, outMean.data), 0)
 
-        aurocIndividual = ChexnetTrainer.computeAUROC(outGT, outPRED, nnClassCount)
-        aurocMean = np.array(aurocIndividual).mean()
+        with torch.no_grad():
+            model.eval()
+            
+            for i, (input, target) in enumerate(dataLoaderTest):
+                target = target.cuda()
+                outGT = torch.cat((outGT, target), 0)
+            
+                bs, n_crops, c, h, w = input.size()
+                varInput = torch.autograd.Variable(input.view(-1, c, h, w).cuda())
+            
+                out = model(varInput)
+                outMean = out.view(bs, n_crops, -1).mean(1)
+                
+                outPRED = torch.cat((outPRED, outMean.data), 0)
+                
+            aurocIndividual = ChexnetTrainer.computeAUROC(outGT, outPRED, nnClassCount)
+            aurocMean = np.array(aurocIndividual).mean()
+                
+            print ('AUROC mean ', aurocMean)
         
-        print ('AUROC mean ', aurocMean)
-        
-        for i in range (0, len(aurocIndividual)):
-            print (CLASS_NAMES[i], ' ', aurocIndividual[i])
+            for i in range (0, len(aurocIndividual)):
+                print (CLASS_NAMES[i], ' ', aurocIndividual[i])
         
      
         return

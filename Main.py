@@ -11,8 +11,8 @@ from ChexnetTrainer import ChexnetTrainer
 
 def main ():
     
-    #runTest()
-    runTrain()
+    runTest()
+#    runTrain()
   
 #--------------------------------------------------------------------------------   
 
@@ -43,7 +43,7 @@ def runTrain():
     nnClassCount = 14
     
     #---- Training settings: batch size, maximum number of epochs
-    trBatchSize = 4
+    trBatchSize = 2
     trMaxEpoch = 10
     
     #---- Parameters related to image transforms: size of the down-scaled image, cropped image
@@ -52,7 +52,7 @@ def runTrain():
 
     type_of_img = 'lateral'
     
-    pathModel = 'm-' + timestampLaunch + type_of_img + '.pth.tar'
+    pathModel = 'm-' + timestampLaunch + '.pth.tar'
 
       
     print ('Training NN architecture = ', nnArchitecture)
@@ -70,11 +70,11 @@ def runTest():
     nnArchitecture = 'DENSE-NET-121'
     nnIsTrained = True
     nnClassCount = 14
-    trBatchSize = 4
+    trBatchSize = 8
     imgtransResize = 256
     imgtransCrop = 224
     
-    pathModel = './model/m-attempt1lateral.pth.tar'
+    pathModel = 'm-31052019-091617.pth.tar'
     
     timestampLaunch = ''
     

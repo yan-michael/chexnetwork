@@ -24,13 +24,10 @@ class DenseNet121(nn.Module):
         kernelCount = self.densenet121.classifier.in_features
 		
         self.densenet121.classifier = nn.Sequential(nn.Linear(kernelCount, classCount * 3))
-        torch.cuda.empty_cache()
         
     def forward(self, x):
 #        print("Forward() has been called")
-        torch.cuda.empty_cache()
         x = self.densenet121(x)
-        torch.cuda.empty_cache()
         return x
 
 class DenseNet169(nn.Module):

@@ -201,17 +201,38 @@ class ChexnetTrainer ():
         
         outAUROC = []
         
-        datanpGT = dataGT.cpu().numpy()
-        datanpPRED = dataPRED.cpu().numpy()
+        datanpGT = dataGT.cpu()
+        datanpPRED = dataPRED.cpu()
+        print(datanpGT)
+  #      print("sum of gt: ", torch.sum(datanpGT))
         torch.cuda.empty_cache()
         
         for i in range(classCount):
 
+            # Select out the examples for which we have a certain groundtruth.
+            gt = datanpGT[:, i]
+            preds = datanpPRED[:, i]
+
+            certain_indicator = 1 - (gt == 1) # I get 1s for all the certain examples.
+ #           print("num example: ", certain_indicator.sum())
+
+            gt_filtered = gt[certain_indicator].numpy()
+            gt_filtered /= 2
+
+#            print("Gt filted : ", gt_filtered)
+            preds_filtered = preds[certain_indicator]
+
+            preds_filtered = preds_filtered[: , [0,2]] 
+
+            preds_filtered = torch.softmax(preds_filtered, dim=1).numpy()
+
+            preds_filtered = preds_filtered[: , 1]
             try:
-                    outAUROC.append(roc_auc_score(datanpGT[:, i], datanpPRED[:, i]))
-            except ValueError:
-                    pass
-            
+                #outAUROC.append(roc_auc_score(datanpGT[:, i], datanpPRED[:, i]))
+                outAUROC.append(roc_auc_score(gt_filtered, preds_filtered))
+            except ValueError as v:
+                print(v)
+                
         return outAUROC
         
         
@@ -271,13 +292,21 @@ class ChexnetTrainer ():
             for i, (input, target) in enumerate(dataLoaderTest):
                 target = target.cuda()
                 outGT = torch.cat((outGT, target), 0)
+
+        
             
                 bs, n_crops, c, h, w = input.size()
+   #             print(str(n_crops))
                 varInput = torch.autograd.Variable(input.view(-1, c, h, w).cuda())
             
                 out = model(varInput)
-                outMean = out.view(bs, n_crops, -1).mean(1)
-                
+
+                # Reshape to: batch_size, n_crops, num_pathologies, 3
+                num_pathologies = 14
+                out = out.view(bs, n_crops, num_pathologies, -1)
+
+                # Average over the 10 crops.
+                outMean = out.mean(1)
                 outPRED = torch.cat((outPRED, outMean.data), 0)
                 
             aurocIndividual = ChexnetTrainer.computeAUROC(outGT, outPRED, nnClassCount)

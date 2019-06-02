@@ -36,6 +36,7 @@ class DatasetGenerator (Dataset):
                 imagePath = os.path.join(pathImageDirectory, lineItems[0])
                 imageLabel = lineItems[1:]
                 imageLabel = [int(i) for i in imageLabel]
+ #               print("imagelabel frominit ", imageLabel)
                 
                 self.listImagePaths.append(imagePath)
                 self.listImageLabels.append(imageLabel)   
@@ -50,6 +51,7 @@ class DatasetGenerator (Dataset):
         
         imageData = Image.open(imagePath).convert('RGB')
         imageLabel= torch.FloatTensor(self.listImageLabels[index])
+#        print("getitem imagelabel ", imageLabel)
         
         if self.transform != None: imageData = self.transform(imageData)
         

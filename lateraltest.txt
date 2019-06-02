@@ -1,7 +1,0 @@
-Module initiated
-/home/ubuntu/anaconda3/lib/python3.6/site-packages/torchvision/models/densenet.py:212: UserWarning: nn.init.kaiming_normal is now deprecated in favor of nn.init.kaiming_normal_.
-  nn.init.kaiming_normal(m.weight.data)
-/home/ubuntu/chexnet/ChexnetTrainer.py:277: UserWarning: volatile was removed and now has no effect. Use `with torch.no_grad():` instead.
-  varInput = torch.autograd.Variable(input.view(-1, c, h, w).cuda(), volatile=True)
-AUROC mean  0.161898621504479
-No Finding   0.161898621504479

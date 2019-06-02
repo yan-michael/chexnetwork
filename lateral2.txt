@@ -1,7 +1,0 @@
-Training NN architecture =  DENSE-NET-121
-Module initiated
-Training epoch 1 of 10
-/home/ubuntu/anaconda3/lib/python3.6/site-packages/torchvision/models/densenet.py:212: UserWarning: nn.init.kaiming_normal is now deprecated in favor of nn.init.kaiming_normal_.
-  nn.init.kaiming_normal(m.weight.data)
-/home/ubuntu/anaconda3/lib/python3.6/site-packages/torch/nn/_reduction.py:49: UserWarning: size_average and reduce args will be deprecated, please use reduction='mean' instead.
-  warnings.warn(warning.format(ret))

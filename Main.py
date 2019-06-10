@@ -12,7 +12,7 @@ from ChexnetTrainer import ChexnetTrainer
 def main ():
     
     runTest()
-#    runTrain()
+    #runTrain()
   
 #--------------------------------------------------------------------------------   
 
@@ -32,9 +32,9 @@ def runTrain():
     #---- Paths to the files with training, validation and testing sets.
     #---- Each file should contains pairs [path to image, output vector]
     #---- Example: images_011/00027736_001.png 0 0 0 0 0 0 0 0 0 0 0 0 0 0
-    pathFileTrain = './dataset/train_lateral.csv'
-    pathFileVal = './dataset/dev_lateral.csv'
-    pathFileTest = './dataset/test_lateral.csv'
+    pathFileTrain = './dataset/train_frontal.csv'
+    pathFileVal = './dataset/dev_frontal.csv'
+    pathFileTest = './dataset/test_frontal.csv'
     
     #---- Neural network parameters: type of the network, is it pre-trained 
     #---- on imagenet, number of classes
@@ -43,8 +43,8 @@ def runTrain():
     nnClassCount = 14
     
     #---- Training settings: batch size, maximum number of epochs
-    trBatchSize = 2
-    trMaxEpoch = 10
+    trBatchSize = 8
+    trMaxEpoch = 6
     
     #---- Parameters related to image transforms: size of the down-scaled image, cropped image
     imgtransResize = 256
@@ -66,7 +66,7 @@ def runTrain():
 def runTest():
     
     pathDirData = './database'
-    pathFileTest = './dataset/test_lateral.csv'
+    pathFileTest = './dataset/test_frontal_matched_AO.csv'
     nnArchitecture = 'DENSE-NET-121'
     nnIsTrained = True
     nnClassCount = 14
@@ -74,7 +74,7 @@ def runTest():
     imgtransResize = 256
     imgtransCrop = 224
     
-    pathModel = 'm-31052019-091617.pth.tar'
+    pathModel = 'm-frontal.pth.tar'
     
     timestampLaunch = ''
     

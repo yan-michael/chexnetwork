@@ -1,12 +1,13 @@
-# CheXNet implementation in PyTorch
+# DualCheXNet: A View-Specific Approach to Chest Pathology Classification with Uncertainty Labels
+
+***This was adapted from zoogzog/chexpert***
 
 Yet another PyTorch implementation of the [CheXNet](https://arxiv.org/abs/1711.05225) algorithm for pathology detection in 
 frontal chest X-ray images. This implementation is based on approach presented [here](https://github.com/arnoweng/CheXNet). Ten-crops 
 technique is used to transform images at the testing stage to get better accuracy. 
 
-The highest accuracy evaluated with AUROC was 0.8508 (see the model m-25012018-123527 in the models directory).
-The same training (70%), validation (10%) and testing (20%) datasets were used as in [this](https://github.com/arnoweng/CheXNet) 
-implementation.
+The highest accuracy evaluated with AUROC was 0.847
+Training (70%), validation (20%) and testing (10%) datasets were used in this implementation.
 
 ![alt text](test/heatmap.png)
 
